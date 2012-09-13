@@ -1,8 +1,7 @@
 library(XML)
+options(stringsAsFactors=FALSE)
 
 baseurl <- "http://maps.googleapis.com/maps/api/distancematrix/xml?"
-
-
 
 #Return the distance of a trip from the origin to the destination.
 getGMdistance <- function(origin, destination, mode="driving", language="en", units="metric" ){
@@ -13,7 +12,9 @@ getGMdistance <- function(origin, destination, mode="driving", language="en", un
   
   url <- paste(baseurl, origin,"&",destination,"&mode=",mode,"&language=",language,"&units=",units,"&sensor=false",sep="")
   doc <- xmlTreeParse(url, useInternal=TRUE)
-  distance <- xmlValue((doc["//distance/value"])[[1]])
+  distance <- NA
+  try(distance <- xmlValue((doc["//distance/value"])[[1]]),silent=TRUE)
+ # if (!is.numeric(distance)) distance <- NA
   return(distance)
   }
 
@@ -47,21 +48,8 @@ getGMname <- function(text){
   return(name)
 }
 
-
-
 # Same as getGMname but for lists.
 getGMnames <- function(list){
-  output <- NA
-  for (i in seq_along(list)){
-    list[i] <- getGMname(list[i])
-  }
-  return(list)
-}
-
-
-
-# Same as getGMname but for lists.
-getGMnames2 <- function(list){
   #default parameters
   mode="driving"; language="en"; units="metric"
   
@@ -91,7 +79,7 @@ getGMnames2 <- function(list){
 getGMdistancematrix <- function(list, mode="driving", language="en", units="metric"){
   
   #default parameters
-  mode="driving"; language="en"; units="metric"
+  #mode="driving"; language="en"; units="metric"
   
   #create output object
   output <- as.data.frame(matrix(ncol=length(list),nrow=(length(list))))
@@ -105,10 +93,12 @@ getGMdistancematrix <- function(list, mode="driving", language="en", units="metr
   ############################
   
   url <- paste(baseurl, origins,"&",destinations,"&mode=",mode,"&language=",language,"&units=",units,"&sensor=false",sep="")
-    
   #parse the xml 
   doc <- xmlParse(url, getDTD=TRUE)
  
+  status <- xmlValue(doc["//DistanceMatrixResponse/status"][[1]])
+  if(status!="OK") print(status)
+  
   ##############################
   # rename matrix col and rows #
   ##############################
